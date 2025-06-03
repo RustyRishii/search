@@ -51,7 +51,7 @@ const Home = () => {
         method: "POST",
         headers: {
           "Content-type": "application/json",
-          "x-api-key": "62f09962-21db-4c5e-ae1e-6ecf053e7dc8",
+          "x-api-key": process.env.EXA_API_KEY,
         },
         body: JSON.stringify({
           numResults: 50,
@@ -67,7 +67,6 @@ const Home = () => {
       setSearch(responseData.results);
     } catch (error) {
       console.error(error);
-      // Alert.alert(error);
     } finally {
       setIsLoading(false); // ✅ Stop loading no matter what
     }
