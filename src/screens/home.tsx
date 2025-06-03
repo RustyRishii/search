@@ -10,11 +10,21 @@ import {
   Platform,
   FlatList,
   Linking,
+  Alert,
+  RefreshControl,
 } from "react-native";
-import React, { use, useState } from "react";
+import React, { use, useRef, useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../App";
+import LottieView from "lottie-react-native";
 
 const Home = () => {
+  // const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   type searchResults = {
     id: String;
     title: String;
@@ -26,10 +36,17 @@ const Home = () => {
 
   const [searchText, setSearchText] = useState<String>("");
   const [search, setSearch] = useState<searchResults[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadingAnimation = useRef<LottieView>(null);
 
   const webSearch = async () => {
     try {
+      const start = performance.now();
       Keyboard.dismiss();
+      setIsLoading(true);
+      if (searchText === "") return;
       const response = await fetch("https://api.exa.ai/search", {
         method: "POST",
         headers: {
@@ -37,18 +54,31 @@ const Home = () => {
           "x-api-key": "62f09962-21db-4c5e-ae1e-6ecf053e7dc8",
         },
         body: JSON.stringify({
+          numResults: 50,
+          type: "neural",
+          category: "linkedin profile",
           query: searchText,
-          contents: {
-            text: true,
-          },
         }),
       });
+      const end = performance.now();
+      const duration = end - start;
+      console.log(`API call duration: ${(duration / 1000).toFixed(2)} seconds`);
       const responseData = await response.json();
-      // console.log(responseData);
-      setSearch(await responseData.results);
+      setSearch(responseData.results);
     } catch (error) {
       console.error(error);
+      // Alert.alert(error);
+    } finally {
+      setIsLoading(false); // ✅ Stop loading no matter what
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    webSearch();
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 200);
   };
 
   return (
@@ -59,36 +89,61 @@ const Home = () => {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-        <FlatList
-          data={search}
-          scrollEnabled={true}
-          contentContainerStyle={styles.resultsContainer}
-          keyExtractor={(item, index) => index.toString()}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <View style={styles.resultCard}>
-              <Text style={styles.resultTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-              <Pressable onPress={() => Linking.openURL(item?.url)}>
-                <Text style={styles.resultUrl} numberOfLines={1}>
-                  {item.url}
+        {isLoading ? (
+          <LottieView
+            style={{
+              width: 300,
+              height: 300,
+              justifyContent: "center",
+              alignItems: "center",
+              alignSelf: "center",
+              alignContent: "center",
+              flex: 1,
+            }}
+            ref={loadingAnimation}
+            source={require("../../assets/loading.json")}
+            autoPlay={true}
+            loop={true}
+          />
+        ) : (
+          <FlatList
+            data={search}
+            scrollEnabled={true}
+            contentContainerStyle={styles.resultsContainer}
+            keyExtractor={(item, index) => index.toString()}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.resultCard}>
+                <Text style={styles.resultTitle} numberOfLines={2}>
+                  {item.title}
                 </Text>
-              </Pressable>
-              <View style={styles.resultMeta}>
-                {item.author && (
-                  <Text style={styles.resultAuthor}>by {item.author}</Text>
-                )}
-                {item.publishedDate && (
-                  <Text style={styles.resultDate}>{item.publishedDate}</Text>
-                )}
+                <Pressable onPress={() => Linking.openURL(item?.url)}>
+                  <Text style={styles.resultUrl} numberOfLines={1}>
+                    {item.url}
+                  </Text>
+                </Pressable>
+                <View style={styles.resultMeta}>
+                  {item.author && (
+                    <Text style={styles.resultAuthor}>by {item.author}</Text>
+                  )}
+                  {item.publishedDate && (
+                    <Text style={styles.resultDate}>{item.publishedDate}</Text>
+                  )}
+                </View>
+                <Text style={styles.resultText} numberOfLines={3}>
+                  {item.text}
+                </Text>
               </View>
-              <Text style={styles.resultText} numberOfLines={3}>
-                {item.text}
-              </Text>
-            </View>
-          )}
-        />
+            )}
+            refreshControl={
+              <RefreshControl
+                enabled
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
+          />
+        )}
         <View style={styles.searchContainer}>
           <TextInput
             placeholder="Search something"
@@ -99,6 +154,12 @@ const Home = () => {
           <Pressable style={styles.searchButton} onPress={webSearch}>
             <Text style={styles.searchButtonText}>Search</Text>
           </Pressable>
+          {/* <Pressable
+            style={styles.searchButton}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Text style={styles.searchButtonText}>Go</Text>
+          </Pressable> */}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -140,7 +201,7 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   searchButton: {
-    backgroundColor: "black", // Changed to a more standard blue
+    backgroundColor: "black",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
@@ -156,7 +217,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   searchButtonText: {
-    color: "#FFFFFF", // Make sure this stays white
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },
