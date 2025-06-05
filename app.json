@@ -16,6 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.search"
     },
+    "extra": {
+      "EXA_API_KEY": "62f09962-21db-4c5e-ae1e-6ecf053e7dc8"
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

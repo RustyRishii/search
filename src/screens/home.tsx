@@ -10,21 +10,15 @@ import {
   Platform,
   FlatList,
   Linking,
-  Alert,
   RefreshControl,
 } from "react-native";
 import React, { use, useRef, useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../App";
 import LottieView from "lottie-react-native";
 
 const Home = () => {
-  // const navigation = useNavigation();
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
   type searchResults = {
     id: String;
     title: String;
@@ -41,6 +35,8 @@ const Home = () => {
 
   const loadingAnimation = useRef<LottieView>(null);
 
+  const navigation = useNavigation();
+
   const webSearch = async () => {
     try {
       const start = performance.now();
@@ -51,12 +47,12 @@ const Home = () => {
         method: "POST",
         headers: {
           "Content-type": "application/json",
-          "x-api-key": process.env.EXA_API_KEY,
+          "x-api-key": process.env.EXPO_PUBLIC_EXA_API_KEY,
         },
         body: JSON.stringify({
           numResults: 50,
           type: "neural",
-          category: "linkedin profile",
+          // category: "linkedin profile",s
           query: searchText,
         }),
       });
@@ -96,7 +92,6 @@ const Home = () => {
               justifyContent: "center",
               alignItems: "center",
               alignSelf: "center",
-              alignContent: "center",
               flex: 1,
             }}
             ref={loadingAnimation}
@@ -104,6 +99,19 @@ const Home = () => {
             autoPlay={true}
             loop={true}
           />
+        ) : search.length === 0 ? (
+          <Text
+            style={{
+              fontSize: 20,
+              flex: 1,
+              textAlignVertical: "center",
+              justifyContent: "center",
+              textAlign: "center",
+              alignSelf: "center",
+            }}
+          >
+            Please search for something
+          </Text>
         ) : (
           <FlatList
             data={search}
@@ -116,7 +124,7 @@ const Home = () => {
                 <Text style={styles.resultTitle} numberOfLines={2}>
                   {item.title}
                 </Text>
-                <Pressable onPress={() => Linking.openURL(item?.url)}>
+                <Pressable onPress={() => Linking.openURL(item.url)}>
                   <Text style={styles.resultUrl} numberOfLines={1}>
                     {item.url}
                   </Text>
@@ -160,6 +168,7 @@ const Home = () => {
             <Text style={styles.searchButtonText}>Go</Text>
           </Pressable> */}
         </View>
+        {/* <Dropdown /> */}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -275,5 +284,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#4B5563",
     lineHeight: 20,
+  },
+  lottieLoadingView: {
+    width: 300,
+    height: 300,
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    alignContent: "center",
+    flex: 1,
   },
 });

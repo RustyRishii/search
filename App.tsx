@@ -1,32 +1,85 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Home from "./src/screens/home";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import {
-  createStaticNavigation,
-  NavigationContainer,
-} from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Settings from "./src/screens/settings";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import Bookmark from "./src/screens/bookmark";
+import HomeIcon from "./src/Icons/home";
+import SettingsIcon from "./src/Icons/settingsIcon";
+import BookmarkIcon from "./src/Icons/bookmark";
+
+import HomeFilled from "./assets/BottomNavBar/HomeFilled.svg";
+import HomeEmpty from "./assets/BottomNavBar/HomeEmpty.svg";
+import SettingsFilled from "./assets/BottomNavBar/SettingsFilled.svg";
+import SettingsEmpty from "./assets/BottomNavBar/SettingsEmpty.svg";
+import BookmarkEmpty from "./assets/BottomNavBar/BookmarkEmpty.svg";
+import BookmarkFilled from "./assets/BottomNavBar/BookmarkFilled.svg";
 
 export default function App() {
   return (
     <NavigationContainer>
       <SafeAreaProvider>
-        <Rootstack />
+        <BottomTabBarStack />
       </SafeAreaProvider>
     </NavigationContainer>
   );
 }
 
-// const Stack = createNativeStackNavigator();
-export type RootStackParamList = {
-  Home: undefined; // No params for Home screen
-  Settings: undefined; // No params for Settings screen
-  // If Settings took a userId param, it would be: Settings: { userId: string };
-};
+const Tab = createBottomTabNavigator();
+const iconSize = { width: 25, height: 25 };
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+function BottomTabBarStack() {
+  return (
+    <Tab.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        tabBarShowLabel: false,
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        options={{
+          tabBarIcon: ({ focused }) =>
+            focused ? (
+              <HomeFilled {...iconSize} />
+            ) : (
+              <HomeEmpty {...iconSize} />
+            ),
+        }}
+        name="Home"
+        component={Home}
+      />
+      <Tab.Screen
+        options={{
+          tabBarIcon: ({ focused }) =>
+            focused ? (
+              <SettingsFilled {...iconSize} />
+            ) : (
+              <SettingsEmpty {...iconSize} />
+            ),
+        }}
+        name="Settings"
+        component={Settings}
+      />
+      <Tab.Screen
+        options={{
+          tabBarIcon: ({ focused }) =>
+            focused ? (
+              <BookmarkFilled {...iconSize} />
+            ) : (
+              <BookmarkEmpty {...iconSize} />
+            ),
+        }}
+        name="Bookmark"
+        component={Bookmark}
+      />
+    </Tab.Navigator>
+  );
+}
+
+const Stack = createNativeStackNavigator();
 
 function Rootstack() {
   return (
