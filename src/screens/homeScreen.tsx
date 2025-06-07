@@ -12,13 +12,21 @@ import {
   Linking,
   RefreshControl,
 } from "react-native";
-import React, { use, useRef, useState } from "react";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import React, { useRef, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import LottieView from "lottie-react-native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
-const Home = () => {
+type HomeStackParamList = {
+  Home: undefined;
+  DetailsScreen: { title: String; text: String };
+};
+
+const HomeScreen = () => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+
   type searchResults = {
     id: String;
     title: String;
@@ -35,8 +43,6 @@ const Home = () => {
 
   const loadingAnimation = useRef<LottieView>(null);
 
-  const navigation = useNavigation();
-
   const webSearch = async () => {
     try {
       const start = performance.now();
@@ -50,10 +56,12 @@ const Home = () => {
           "x-api-key": process.env.EXPO_PUBLIC_EXA_API_KEY,
         },
         body: JSON.stringify({
-          numResults: 50,
-          type: "neural",
-          // category: "linkedin profile",s
           query: searchText,
+          type: "auto",
+          numResults: 50,
+          contents: {
+            text: true,
+          },
         }),
       });
       const end = performance.now();
@@ -110,7 +118,7 @@ const Home = () => {
               alignSelf: "center",
             }}
           >
-            Please search for something
+            Search something
           </Text>
         ) : (
           <FlatList
@@ -120,27 +128,38 @@ const Home = () => {
             keyExtractor={(item, index) => index.toString()}
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
-              <View style={styles.resultCard}>
-                <Text style={styles.resultTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <Pressable onPress={() => Linking.openURL(item.url)}>
-                  <Text style={styles.resultUrl} numberOfLines={1}>
-                    {item.url}
+              <Pressable
+                onPress={() =>
+                  navigation.navigate("DetailsScreen", {
+                    title: item.title,
+                    text: item.text,
+                  })
+                }
+              >
+                <View style={styles.resultCard}>
+                  <Text style={styles.resultTitle} numberOfLines={2}>
+                    {item.title}
                   </Text>
-                </Pressable>
-                <View style={styles.resultMeta}>
-                  {item.author && (
-                    <Text style={styles.resultAuthor}>by {item.author}</Text>
-                  )}
-                  {item.publishedDate && (
-                    <Text style={styles.resultDate}>{item.publishedDate}</Text>
-                  )}
+                  <Pressable onPress={() => Linking.openURL(item.url)}>
+                    <Text style={styles.resultUrl} numberOfLines={1}>
+                      {item.url}
+                    </Text>
+                  </Pressable>
+                  <View style={styles.resultMeta}>
+                    {item.author && (
+                      <Text style={styles.resultAuthor}>by {item.author}</Text>
+                    )}
+                    {item.publishedDate && (
+                      <Text style={styles.resultDate}>
+                        {item.publishedDate}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.resultText} numberOfLines={3}>
+                    {item.text}
+                  </Text>
                 </View>
-                <Text style={styles.resultText} numberOfLines={3}>
-                  {item.text}
-                </Text>
-              </View>
+              </Pressable>
             )}
             refreshControl={
               <RefreshControl
@@ -174,19 +193,17 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   safeArea: {
     padding: 16,
     flex: 1,
-    backgroundColor: "#F0F2F5", // Or your desired screen background
+    backgroundColor: "#F0F2F5",
   },
   searchContainer: {
     marginTop: 10,
     flexDirection: "row",
-    // paddingHorizontal: 20,
-    // paddingVertical: 16,
     gap: 12,
   },
   searchInput: {
