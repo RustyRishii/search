@@ -1,35 +1,93 @@
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import LottieView from "lottie-react-native";
-import React, { useRef, useState } from "react";
 import {
+  FlatList,
   Keyboard,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
   Pressable,
-  StatusBar,
+  RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import AppText from "../components/AppText";
-import AnswerScreen from "./answerScreen";
+import React, { useRef, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+// import { LottieView } from "lottie-react-native/lib/typescript/LottieView";
+import LottieView from "lottie-react-native";
+import UniversalStyles from "../UniversalStyles";
 
 type HomeStackParamList = {
   Home: undefined;
   DetailsScreen: { title: String; text: String };
   SearchScreen: undefined;
-  AnswerScreen: undefined;
-  ResearchScreen: undefined;
 };
 
-const HomeScreen = () => {
+const SearchScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
 
+  const webSearch = async () => {
+    try {
+      const start = performance.now();
+      Keyboard.dismiss();
+      setIsLoading(true);
+      if (searchText === "") return;
+      const response = await fetch("https://api.exa.ai/search", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json",
+          "x-api-key": process.env.EXPO_PUBLIC_EXA_API_KEY,
+        },
+        body: JSON.stringify({
+          query: searchText,
+          type: "auto",
+          numResults: 50,
+          contents: {
+            text: true,
+          },
+        }),
+      });
+      const end = performance.now();
+      const duration = end - start;
+      console.log(`API call duration: ${(duration / 1000).toFixed(2)} seconds`);
+      const responseData = await response.json();
+      setSearch(responseData.results);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false); // ✅ Stop loading no matter what
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    webSearch();
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 200);
+  };
+
+  type searchResults = {
+    id: String;
+    title: String;
+    url: string;
+    publishedDate: String;
+    author: String;
+    text: String;
+  };
+
+  const [searchText, setSearchText] = useState<String>("");
+  const [search, setSearch] = useState<searchResults[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const loadingAnimation = useRef<LottieView>(null);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="default" backgroundColor="black" />
-      {/* <KeyboardAvoidingView
+    <View style={UniversalStyles.safeArea}>
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
@@ -45,7 +103,7 @@ const HomeScreen = () => {
               flex: 1,
             }}
             ref={loadingAnimation}
-            source={require("../../assets/loading.json")}
+            source={require("../../assets/LottieFiles/searchLoading.json")}
             autoPlay={true}
             loop={true}
           />
@@ -114,88 +172,28 @@ const HomeScreen = () => {
         )}
         <View style={styles.searchContainer}>
           <TextInput
+            autoFocus={true}
             placeholder="Search something"
             placeholderTextColor="grey"
-            style={styles.searchInput}
+            style={UniversalStyles.searchInput}
             onChangeText={(newSearch) => setSearchText(newSearch)}
           />
           <Pressable style={styles.searchButton} onPress={webSearch}>
             <Text style={styles.searchButtonText}>Search</Text>
           </Pressable>
         </View>
-      </KeyboardAvoidingView> */}
-      <View
-        style={{
-          borderColor: "green",
-          justifyContent: "center",
-          gap: 8,
-          flex: 1,
-          alignContent: "center",
-          alignItems: "center",
-          alignSelf: "center",
-        }}
-      >
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Pressable
-            style={styles.tab}
-            onPress={() => {
-              console.log("Search pressed");
-              navigation.navigate("SearchScreen");
-            }}
-          >
-            <AppText style={{ fontFamily: "Inter", fontSize: 24 }}>
-              Search
-            </AppText>
-          </Pressable>
-          <Pressable
-            style={styles.tab}
-            onPress={() => {
-              console.log("Contents pressed");
-            }}
-          >
-            <AppText style={{ fontFamily: "Inter", fontSize: 24 }}>
-              Contents
-            </AppText>
-          </Pressable>
-        </View>
-
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          <Pressable
-            style={styles.tab}
-            onPress={() => {
-              navigation.navigate("AnswerScreen");
-            }}
-          >
-            <AppText style={{ fontFamily: "Inter", fontSize: 24 }}>
-              Answers
-            </AppText>
-          </Pressable>
-          <Pressable
-            style={styles.tab}
-            onPress={() => {
-              navigation.navigate("ResearchScreen");
-            }}
-          >
-            <Text style={{ fontSize: 24 }}>Research</Text>
-          </Pressable>
-        </View>
-      </View>
-    </SafeAreaView>
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
-export default HomeScreen;
+export default SearchScreen;
 
 const styles = StyleSheet.create({
   safeArea: {
     padding: 16,
     flex: 1,
     backgroundColor: "#F0F2F5",
-  },
-  searchContainer: {
-    marginTop: 10,
-    flexDirection: "row",
-    gap: 12,
   },
   searchInput: {
     flex: 1,
@@ -244,6 +242,11 @@ const styles = StyleSheet.create({
     // flex: 1,
     // paddingHorizontal: 20,
     // paddingBottom: 20,
+  },
+  searchContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 12,
   },
   resultCard: {
     backgroundColor: "#FFFFFF",

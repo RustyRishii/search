@@ -14,10 +14,34 @@ import BookmarkFilled from "./assets/BottomNavBar/BookmarkFilled.svg";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Details from "./src/screens/details";
 import HomeScreen from "./src/screens/homeScreen";
+import SearchScreen from "./src/screens/searchScreen";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { useCallback } from "react";
+import AnswerScreen from "./src/screens/answerScreen";
+import ResearchScreen from "./src/screens/researchScreen";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter: require("./assets/fonts/Inter.ttf"),
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  console.log("Fonts loaded:", fontsLoaded);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer onReady={onLayoutRootView}>
       <SafeAreaProvider>
         <BottomTabBarStack />
       </SafeAreaProvider>
@@ -33,6 +57,8 @@ const Tab = createBottomTabNavigator();
 type HomeStackParamList = {
   Home: undefined;
   DetailsScreen: { title: String; text: String };
+  AnswerSreen: undefined;
+  ResearchScreen: undefined;
 };
 
 function HomeStackFunc() {
@@ -51,7 +77,22 @@ function HomeStackFunc() {
         }}
         component={HomeScreen}
       />
-      <HomeStack.Screen name="DetailsScreen" component={Details} />
+      <HomeStack.Screen
+        name="SearchScreen"
+        options={{
+          gestureEnabled: true,
+        }}
+        component={SearchScreen}
+      />
+      <HomeStack.Screen
+        options={{
+          headerShown: true,
+        }}
+        name="DetailsScreen"
+        component={Details}
+      />
+      <HomeStack.Screen name="AnswerScreen" component={AnswerScreen} />
+      <HomeStack.Screen name="ResearchScreen" component={ResearchScreen} />
     </HomeStack.Navigator>
   );
 }
@@ -78,17 +119,17 @@ function BottomTabBarStack() {
         }}
       />
       {/* <Tab.Screen
-        options={{
-          tabBarIcon: ({ focused }) =>
-            focused ? (
-              <HomeFilled {...iconSize} />
-            ) : (
-              <HomeEmpty {...iconSize} />
-            ),
-        }}
-        name="Home"
-        component={Home}
-      /> */}
+          options={{
+            tabBarIcon: ({ focused }) =>
+              focused ? (
+                <HomeFilled {...iconSize} />
+              ) : (
+                <HomeEmpty {...iconSize} />
+              ),
+          }}
+          name="Home"
+          component={Home}
+        /> */}
       <Tab.Screen
         options={{
           tabBarIcon: ({ focused }) =>
